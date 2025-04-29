@@ -8,6 +8,7 @@
 - 📅 Prompt user to select any historical date
 - 🧠 Scrape Billboard's Hot 100 songs for that date
 - 🔍 Search each song on Spotify
+- 🤖 Use fuzzy matching to find the best match if song not found directly
 - 🎼 Automatically create a private playlist with the matching tracks
 
 ---
@@ -34,7 +35,7 @@
 - spotipy
 - beautifulsoup4
 - requests
-- python-dotenv
+- rapidfuzz
 
 Install dependencies:
 ```bash
@@ -49,6 +50,7 @@ pip install -r requirements.txt
 - BeautifulSoup for web scraping
 - Requests for HTTP calls
 - dotenv for environment management
+- rapidfuzz for fuzzy matching
 
 ---
 

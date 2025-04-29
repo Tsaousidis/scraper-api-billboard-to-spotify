@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import requests
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+from rapidfuzz import fuzz
 import os
 from dotenv import load_dotenv
 
@@ -33,17 +34,39 @@ def authenticate_spotify() -> spotipy.Spotify:
     )
 
 def search_spotify_uris(sp: spotipy.Spotify, song_names: list, year: str) -> list:
-    """Searches for song URIs on Spotify given a list of song names and a year."""
+    """Searches for song URIs on Spotify using fuzzy matching when needed."""
     uris = []
+
     for song in song_names:
         try:
-            result = sp.search(q=f"track:{song} year:{year}", type="track")
-            uri = result["tracks"]["items"][0]["uri"]
-            uris.append(uri)
-        except IndexError:
-            print(f"{song} doesn't exist in Spotify. Skipped.")
+            # Attempt exact search first
+            result = sp.search(q=f"track:{song} year:{year}", type="track", limit=1)
+            items = result["tracks"]["items"]
+            if items:
+                uris.append(items[0]["uri"])
+                continue
+
+            # If not found, use fuzzy matching on broader search
+            fallback_result = sp.search(q=song, type="track", limit=5)
+            best_match = None
+            highest_score = 0
+
+            for item in fallback_result["tracks"]["items"]:
+                title = item["name"]
+                score = fuzz.ratio(song.lower(), title.lower())
+                if score > highest_score:
+                    highest_score = score
+                    best_match = item
+
+            if best_match and highest_score >= 80:
+                print(f"Fuzzy matched: '{song}' → '{best_match['name']}' ({highest_score}%)")
+                uris.append(best_match["uri"])
+            else:
+                print(f"{song} not found, even with fuzzy search.")
+
         except Exception as e:
-            print(f"An error occurred while searching for {song}: {e}")
+            print(f"Error with {song}: {e}")
+
     return uris
 
 def create_spotify_playlist(sp: spotipy.Spotify, user_id: str, date: str, uris: list):
